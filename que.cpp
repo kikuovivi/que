@@ -43,9 +43,9 @@ struct Cliente {
 
 struct Transaccion {
     int id;
-    char tipo[10];       // "COMPRA" o "VENTA"
+    char tipo[10];       
     int idProducto;
-    int idRelacionado;   // proveedor (compra) o cliente (venta)
+    int idRelacionado;  
     int cantidad;
     float precioUnitario;
     float total;
@@ -124,7 +124,6 @@ bool validarFecha(const char* fecha) {
     return true;
 }
 
-// Leer linea evitando problemas con cin
 void leerLinea(char* buffer, int maxLen) {
     cin.getline(buffer, maxLen);
     if (cin.fail()) {
@@ -338,7 +337,6 @@ void crearProducto(Tienda* t) {
     p.activo = true;
     char buf[512];
 
-    // Codigo
     while (true) {
         cout << "Codigo (o CANCELAR): ";
         leerLinea(p.codigo, 20);
@@ -356,7 +354,6 @@ void crearProducto(Tienda* t) {
     leerLinea(p.descripcion, 200);
     if (esCancelar(p.descripcion)) { cout << "Operacion cancelada.\n"; return; }
 
-    // Proveedor
     while (true) {
         cout << "ID de Proveedor (o CANCELAR): ";
         leerLinea(buf, 20);
@@ -369,7 +366,6 @@ void crearProducto(Tienda* t) {
         break;
     }
 
-    // Precio
     while (true) {
         cout << "Precio (o CANCELAR): ";
         leerLinea(buf, 20);
@@ -379,7 +375,6 @@ void crearProducto(Tienda* t) {
         break;
     }
 
-    // Stock
     while (true) {
         cout << "Stock inicial (o CANCELAR): ";
         leerLinea(buf, 20);
@@ -392,7 +387,6 @@ void crearProducto(Tienda* t) {
     obtenerFechaActual(p.fechaRegistro);
     p.id = t->siguienteIdProducto;
 
-    // Resumen
     cout << "\n--- Resumen del nuevo producto ---\n";
     cout << "  Codigo    : " << p.codigo << "\n";
     cout << "  Nombre    : " << p.nombre << "\n";
@@ -1274,4 +1268,5 @@ int main() {
     liberarTienda(&tienda);
     cout << "¡Hasta luego!\n";
     return 0;
+
 }
