@@ -1,16 +1,9 @@
 # Sistema de Gestion de Inventario
-
-**Asignatura:** Programacion 2  
-**Profesor:** Ing. Victor Kneider  
-**Universidad:** Rafael Urdaneta — Facultad de Ingenieria  
-**Trimestre:** 2026-A
-
 ---
 
 ## Descripcion del Proyecto
 
-Sistema de gestion de inventario desarrollado en C++ que permite administrar productos, proveedores, clientes y transacciones comerciales de una tienda. El sistema demuestra el uso avanzado de punteros, memoria dinamica y estructuras en C++, implementando operaciones CRUD completas con validaciones, busquedas y manejo robusto de memoria.
-
+Sistema de gestion de inventario desarrollado en C++ que permite administrar productos, proveedores, clientes y transacciones comerciales de una tienda. 
 ---
 
 ## Instrucciones de Compilacion
@@ -19,8 +12,8 @@ Sistema de gestion de inventario desarrollado en C++ que permite administrar pro
 
 1. Abrir Visual Studio
 2. Crear un nuevo proyecto: **Archivo → Nuevo → Proyecto → Aplicacion de consola C++**
-3. Reemplazar el contenido del `.cpp` generado con el archivo `inventario.cpp`
-4. Compilar con **Ctrl + Shift + B**
+3. Reemplazar el contenido del `.cpp` generado con el archivo `que.cpp`
+4. Compilar con **Ctrl + Shift + B** o pulsando en "Depurador local de Windows"
 5. Verificar que no aparezcan errores en la ventana **Lista de errores**
 
 > El archivo ya incluye `#define _CRT_SECURE_NO_WARNINGS` y `#include <windows.h>` necesarios para compilar en Visual Studio sin advertencias.
@@ -52,10 +45,10 @@ Al iniciar, el sistema solicita el nombre y RIF de la tienda, luego muestra el m
 
 ## Estructura del Codigo
 
-El proyecto consta de un unico archivo `inventario.cpp` organizado en las siguientes secciones:
+El proyecto consta de un unico archivo `que.cpp` organizado en las siguientes secciones:
 
 ```
-inventario.cpp
+que.cpp
 |
 +-- ESTRUCTURAS DE DATOS
 |     Producto, Proveedor, Cliente, Transaccion, Tienda
@@ -157,7 +150,7 @@ numElementos == capacidad  →  nueva capacidad = capacidad * 2
 2. Crear producto "Laptop HP" con codigo PROD-001, asociado al proveedor anterior
 3. Buscar producto por nombre parcial "lap" → encuentra "Laptop HP"
 4. Listar productos → muestra tabla con el producto registrado
-Resultado: OK
+Resultado: sin errores
 ```
 
 ### Caso 2: Compra de Inventario
@@ -165,7 +158,7 @@ Resultado: OK
 1. Registrar compra de 50 unidades de "Laptop HP" al proveedor
 2. Verificar stock: paso de 0 a 50
 3. Buscar transacciones por ID de producto → muestra la compra
-Resultado: OK
+Resultado: sin errores
 ```
 
 ### Caso 3: Venta con Validacion de Stock
@@ -174,7 +167,7 @@ Resultado: OK
 2. Vender 30 unidades al cliente registrado
 3. Verificar stock: paso de 50 a 20
 4. Buscar transacciones por cliente → muestra la venta
-Resultado: OK
+Resultado: sin errores
 ```
 
 ### Caso 4: Cancelacion de Transaccion
@@ -182,7 +175,7 @@ Resultado: OK
 1. Cancelar la venta de 30 unidades
 2. Verificar stock: volvio de 20 a 50
 3. Transaccion marcada como [CANCELADA] en el listado
-Resultado: OK
+Resultado: sin errores
 ```
 
 ### Caso 5: Edicion Selectiva
@@ -190,7 +183,7 @@ Resultado: OK
 1. Actualizar producto: cambiar solo precio y descripcion, resto sin cambios
 2. Actualizar proveedor: cambiar solo telefono
 3. Listar → refleja los cambios correctamente
-Resultado: OK
+Resultado: sin errores
 ```
 
 ### Caso 6: Busquedas Avanzadas
@@ -198,7 +191,7 @@ Resultado: OK
 1. Buscar producto por nombre "lap" → encuentra "Laptop HP"
 2. Listar productos de proveedor ID 1 → muestra solo sus productos
 3. Buscar transacciones por fecha exacta → muestra coincidencias
-Resultado: OK
+Resultado: sin errores
 ```
 
 ### Caso 7: Cancelacion Durante Registro
@@ -206,7 +199,7 @@ Resultado: OK
 1. Iniciar registro de producto, ingresar codigo y nombre
 2. En campo descripcion escribir "CANCELAR"
 3. Verificar que el producto NO fue creado (listado sin cambios)
-Resultado: OK
+Resultado: sin errores
 ```
 
 ---
