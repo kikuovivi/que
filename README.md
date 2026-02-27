@@ -17,13 +17,6 @@ Sistema de gestion de inventario desarrollado en C++ que permite administrar pro
 5. Verificar que no aparezcan errores en la ventana **Lista de errores**
 
 > El archivo ya incluye `#define _CRT_SECURE_NO_WARNINGS` y `#include <windows.h>` necesarios para compilar en Visual Studio sin advertencias.
-
-### g++ (Linux / Mac / MinGW)
-
-```bash
-g++ -std=c++11 -o inventario inventario.cpp
-```
-
 ---
 
 ## Instrucciones de Ejecucion
