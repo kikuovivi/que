@@ -5,7 +5,14 @@
 #include <cctype>
 #include <cstdio>
 #include <windows.h>
+#include <direct.h>
 using namespace std;
+
+struct ArchivoHeader {
+    int cantidadRegistros;      // Total histórico de registros
+    int proximoID;              // Siguiente ID a asignar (Autoincremental)
+    int registrosActivos;       // Registros que no están marcados como eliminados
+    int version;                // Control de versión del archivo
 
 struct Producto {
     int id;
@@ -1270,3 +1277,4 @@ int main() {
     return 0;
 
 }
+
