@@ -66,8 +66,8 @@ struct DetalleTransaccion {
 
 struct Transaccion {
     int id;
-    char tipo[10]; // "COMPRA" o "VENTA"
-    int idRelacionado; // proveedor o cliente
+    char tipo[10];
+    int idRelacionado;
     int cantidadDetalles;
     DetalleTransaccion detalles[20];
     float total;
@@ -98,6 +98,48 @@ const char* ARCHIVO_PRODUCTOS = "productos.bin";
 const char* ARCHIVO_PROVEEDORES = "proveedores.bin";
 const char* ARCHIVO_CLIENTES = "clientes.bin";
 const char* ARCHIVO_TRANSACCIONES = "transacciones.bin";
+
+// ==============================
+// FUNCIONES AUXILIARES
+// ==============================
+
+void leerLinea(char* buffer, int tam) {
+    cin.getline(buffer, tam);
+    if (cin.fail()) {
+        cin.clear();
+        cin.ignore(10000, '\n');
+    }
+}
+
+bool validarEmail(const char* email) {
+    const char* arroba = strchr(email, '@');
+    if (!arroba) return false;
+
+    const char* punto = strchr(arroba, '.');
+    if (!punto) return false;
+
+    return punto > arroba + 1;
+}
+
+void copiarCadena(char* destino, const char* origen, int tam) {
+    strncpy(destino, origen, tam - 1);
+    destino[tam - 1] = '\0';
+}
+
+void mostrarFechaHora(time_t fecha) {
+    tm* tiempoLocal = localtime(&fecha);
+    cout << (tiempoLocal->tm_year + 1900) << "-";
+    if (tiempoLocal->tm_mon + 1 < 10) cout << "0";
+    cout << (tiempoLocal->tm_mon + 1) << "-";
+    if (tiempoLocal->tm_mday < 10) cout << "0";
+    cout << tiempoLocal->tm_mday << " ";
+    if (tiempoLocal->tm_hour < 10) cout << "0";
+    cout << tiempoLocal->tm_hour << ":";
+    if (tiempoLocal->tm_min < 10) cout << "0";
+    cout << tiempoLocal->tm_min << ":";
+    if (tiempoLocal->tm_sec < 10) cout << "0";
+    cout << tiempoLocal->tm_sec;
+}
 
 // ==============================
 // FUNCIONES DE HEADER
@@ -176,7 +218,229 @@ bool inicializarSistemaArchivos() {
 }
 
 // ==============================
-// UTILIDADES DE PRUEBA
+// FUNCIONES DE PROVEEDORES
+// ==============================
+
+bool rifProveedorDuplicado(const char* rifBuscado) {
+    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Proveedor proveedor;
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+
+        if (!proveedor.eliminado && strcmp(proveedor.rif, rifBuscado) == 0) {
+            archivo.close();
+            return true;
+        }
+    }
+
+    archivo.close();
+    return false;
+}
+
+bool guardarProveedor(Proveedor proveedor) {
+    ArchivoHeader header = leerHeader(ARCHIVO_PROVEEDORES);
+
+    proveedor.id = header.proximoID;
+    proveedor.eliminado = false;
+    proveedor.fechaCreacion = time(nullptr);
+    proveedor.fechaUltimaModificacion = proveedor.fechaCreacion;
+
+    ofstream archivo(ARCHIVO_PROVEEDORES, ios::binary | ios::app);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    archivo.write(reinterpret_cast<const char*>(&proveedor), sizeof(Proveedor));
+    archivo.close();
+
+    header.cantidadRegistros++;
+    header.registrosActivos++;
+    header.proximoID++;
+
+    return actualizarHeader(ARCHIVO_PROVEEDORES, header);
+}
+
+void registrarProveedor() {
+    Proveedor proveedor;
+    char buffer[300];
+
+    cout << "\n========== REGISTRAR PROVEEDOR ==========\n";
+
+    cout << "Nombre: ";
+    leerLinea(proveedor.nombre, 100);
+    if (strlen(proveedor.nombre) == 0) {
+        cout << "ERROR: El nombre no puede estar vacio.\n";
+        return;
+    }
+
+    cout << "RIF: ";
+    leerLinea(proveedor.rif, 20);
+    if (strlen(proveedor.rif) == 0) {
+        cout << "ERROR: El RIF no puede estar vacio.\n";
+        return;
+    }
+
+    if (rifProveedorDuplicado(proveedor.rif)) {
+        cout << "ERROR: Ya existe un proveedor con ese RIF.\n";
+        return;
+    }
+
+    cout << "Telefono: ";
+    leerLinea(proveedor.telefono, 20);
+
+    cout << "Email: ";
+    leerLinea(proveedor.email, 100);
+    if (!validarEmail(proveedor.email)) {
+        cout << "ERROR: El email no tiene un formato valido.\n";
+        return;
+    }
+
+    cout << "Direccion: ";
+    leerLinea(proveedor.direccion, 200);
+
+    cout << "\nResumen del proveedor:\n";
+    cout << "Nombre    : " << proveedor.nombre << "\n";
+    cout << "RIF       : " << proveedor.rif << "\n";
+    cout << "Telefono  : " << proveedor.telefono << "\n";
+    cout << "Email     : " << proveedor.email << "\n";
+    cout << "Direccion : " << proveedor.direccion << "\n";
+
+    cout << "\nConfirmar guardado? (S/N): ";
+    leerLinea(buffer, 10);
+
+    if (toupper(buffer[0]) != 'S') {
+        cout << "Operacion cancelada.\n";
+        return;
+    }
+
+    if (guardarProveedor(proveedor)) {
+        cout << "Proveedor guardado correctamente.\n";
+    } else {
+        cout << "ERROR: No se pudo guardar el proveedor.\n";
+    }
+}
+
+void listarProveedores() {
+    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
+    if (!archivo.is_open()) {
+        cout << "ERROR: No se pudo abrir el archivo de proveedores.\n";
+        return;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    if (header.registrosActivos == 0) {
+        cout << "\nNo hay proveedores registrados.\n";
+        archivo.close();
+        return;
+    }
+
+    cout << "\n==================== LISTADO DE PROVEEDORES ====================\n";
+
+    Proveedor proveedor;
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+
+        if (proveedor.eliminado) {
+            continue;
+        }
+
+        cout << "\nID        : " << proveedor.id << "\n";
+        cout << "Nombre    : " << proveedor.nombre << "\n";
+        cout << "RIF       : " << proveedor.rif << "\n";
+        cout << "Telefono  : " << proveedor.telefono << "\n";
+        cout << "Email     : " << proveedor.email << "\n";
+        cout << "Direccion : " << proveedor.direccion << "\n";
+        cout << "Creado    : ";
+        mostrarFechaHora(proveedor.fechaCreacion);
+        cout << "\n";
+    }
+
+    archivo.close();
+}
+
+long long obtenerOffsetProveedor(int indice) {
+    return sizeof(ArchivoHeader) + static_cast<long long>(indice) * sizeof(Proveedor);
+}
+
+int buscarIndiceProveedorPorID(int idBuscado) {
+    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
+    if (!archivo.is_open()) {
+        return -1;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Proveedor proveedor;
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.seekg(obtenerOffsetProveedor(i), ios::beg);
+        archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+
+        if (!proveedor.eliminado && proveedor.id == idBuscado) {
+            archivo.close();
+            return i;
+        }
+    }
+
+    archivo.close();
+    return -1;
+}
+
+bool leerProveedorPorIndice(int indice, Proveedor& proveedor) {
+    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    archivo.seekg(obtenerOffsetProveedor(indice), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+    archivo.close();
+
+    return true;
+}
+
+void buscarProveedorPorID() {
+    char buffer[50];
+    cout << "\nID del proveedor a buscar: ";
+    leerLinea(buffer, 50);
+
+    int idBuscado = atoi(buffer);
+    int indice = buscarIndiceProveedorPorID(idBuscado);
+
+    if (indice == -1) {
+        cout << "ERROR: No existe un proveedor activo con ese ID.\n";
+        return;
+    }
+
+    Proveedor proveedor;
+    if (!leerProveedorPorIndice(indice, proveedor)) {
+        cout << "ERROR: No se pudo leer el proveedor.\n";
+        return;
+    }
+
+    cout << "\n========== PROVEEDOR ENCONTRADO ==========\n";
+    cout << "ID        : " << proveedor.id << "\n";
+    cout << "Nombre    : " << proveedor.nombre << "\n";
+    cout << "RIF       : " << proveedor.rif << "\n";
+    cout << "Telefono  : " << proveedor.telefono << "\n";
+    cout << "Email     : " << proveedor.email << "\n";
+    cout << "Direccion : " << proveedor.direccion << "\n";
+    cout << "Creado    : ";
+    mostrarFechaHora(proveedor.fechaCreacion);
+    cout << "\n";
+}
+
+// ==============================
+// FUNCIONES DE PRUEBA
 // ==============================
 
 void mostrarHeader(const char* nombreArchivo) {
@@ -189,6 +453,45 @@ void mostrarHeader(const char* nombreArchivo) {
     cout << "Version               : " << header.version << "\n";
 }
 
+void menuProveedores() {
+    char buffer[20];
+    int opcion = -1;
+
+    do {
+        cout << "\n=============== MENU PROVEEDORES ===============\n";
+        cout << "1. Registrar proveedor\n";
+        cout << "2. Listar proveedores\n";
+        cout << "3. Buscar proveedor por ID\n";
+        cout << "4. Mostrar header de proveedores\n";
+        cout << "0. Salir\n";
+        cout << "Seleccione una opcion: ";
+        leerLinea(buffer, 20);
+
+        opcion = atoi(buffer);
+
+        switch (opcion) {
+            case 1:
+                registrarProveedor();
+                break;
+            case 2:
+                listarProveedores();
+                break;
+            case 3:
+                buscarProveedorPorID();
+                break;
+            case 4:
+                mostrarHeader(ARCHIVO_PROVEEDORES);
+                break;
+            case 0:
+                cout << "Saliendo del sistema...\n";
+                break;
+            default:
+                cout << "ERROR: Opcion invalida.\n";
+        }
+
+    } while (opcion != 0);
+}
+
 // ==============================
 // MAIN
 // ==============================
@@ -199,13 +502,7 @@ int main() {
         return 1;
     }
 
-    cout << "Sistema de archivos binarios inicializado correctamente.\n";
-
-    mostrarHeader(ARCHIVO_TIENDA);
-    mostrarHeader(ARCHIVO_PRODUCTOS);
-    mostrarHeader(ARCHIVO_PROVEEDORES);
-    mostrarHeader(ARCHIVO_CLIENTES);
-    mostrarHeader(ARCHIVO_TRANSACCIONES);
+    menuProveedores();
 
     return 0;
 }
