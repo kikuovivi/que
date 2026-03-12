@@ -33,8 +33,9 @@ struct Proveedor {
     char telefono[20];
     char email[100];
     char direccion[200];
-    char fechaRegistro[11];
-    bool activo;
+    time_t fechaCreacion;
+    time_t fechaUltimaModificacion;
+    bool eliminado;
 };
 
 struct Cliente {
@@ -1277,4 +1278,5 @@ int main() {
     return 0;
 
 }
+
 
