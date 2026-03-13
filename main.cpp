@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cstring>
 #include <ctime>
+#include <cstdlib>
 
 using namespace std;
 
@@ -121,11 +122,6 @@ bool validarEmail(const char* email) {
     return punto > arroba + 1;
 }
 
-void copiarCadena(char* destino, const char* origen, int tam) {
-    strncpy(destino, origen, tam - 1);
-    destino[tam - 1] = '\0';
-}
-
 void mostrarFechaHora(time_t fecha) {
     tm* tiempoLocal = localtime(&fecha);
     cout << (tiempoLocal->tm_year + 1900) << "-";
@@ -221,6 +217,10 @@ bool inicializarSistemaArchivos() {
 // FUNCIONES DE PROVEEDORES
 // ==============================
 
+long long obtenerOffsetProveedor(int indice) {
+    return sizeof(ArchivoHeader) + static_cast<long long>(indice) * sizeof(Proveedor);
+}
+
 bool rifProveedorDuplicado(const char* rifBuscado) {
     ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
     if (!archivo.is_open()) {
@@ -232,6 +232,7 @@ bool rifProveedorDuplicado(const char* rifBuscado) {
 
     Proveedor proveedor;
     for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.seekg(obtenerOffsetProveedor(i), ios::beg);
         archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
 
         if (!proveedor.eliminado && strcmp(proveedor.rif, rifBuscado) == 0) {
@@ -265,6 +266,51 @@ bool guardarProveedor(Proveedor proveedor) {
     header.proximoID++;
 
     return actualizarHeader(ARCHIVO_PROVEEDORES, header);
+}
+
+int buscarIndiceProveedorPorID(int idBuscado) {
+    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
+    if (!archivo.is_open()) {
+        return -1;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Proveedor proveedor;
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.seekg(obtenerOffsetProveedor(i), ios::beg);
+        archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+
+        if (!proveedor.eliminado && proveedor.id == idBuscado) {
+            archivo.close();
+            return i;
+        }
+    }
+
+    archivo.close();
+    return -1;
+}
+
+bool leerProveedorPorIndice(int indice, Proveedor& proveedor) {
+    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    archivo.seekg(obtenerOffsetProveedor(indice), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
+    archivo.close();
+
+    return true;
+}
+
+bool leerProveedorPorID(int idBuscado, Proveedor& proveedor) {
+    int indice = buscarIndiceProveedorPorID(idBuscado);
+    if (indice == -1) {
+        return false;
+    }
+    return leerProveedorPorIndice(indice, proveedor);
 }
 
 void registrarProveedor() {
@@ -347,6 +393,7 @@ void listarProveedores() {
 
     Proveedor proveedor;
     for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.seekg(obtenerOffsetProveedor(i), ios::beg);
         archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
 
         if (proveedor.eliminado) {
@@ -365,47 +412,6 @@ void listarProveedores() {
     }
 
     archivo.close();
-}
-
-long long obtenerOffsetProveedor(int indice) {
-    return sizeof(ArchivoHeader) + static_cast<long long>(indice) * sizeof(Proveedor);
-}
-
-int buscarIndiceProveedorPorID(int idBuscado) {
-    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
-    if (!archivo.is_open()) {
-        return -1;
-    }
-
-    ArchivoHeader header;
-    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-
-    Proveedor proveedor;
-    for (int i = 0; i < header.cantidadRegistros; i++) {
-        archivo.seekg(obtenerOffsetProveedor(i), ios::beg);
-        archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
-
-        if (!proveedor.eliminado && proveedor.id == idBuscado) {
-            archivo.close();
-            return i;
-        }
-    }
-
-    archivo.close();
-    return -1;
-}
-
-bool leerProveedorPorIndice(int indice, Proveedor& proveedor) {
-    ifstream archivo(ARCHIVO_PROVEEDORES, ios::binary);
-    if (!archivo.is_open()) {
-        return false;
-    }
-
-    archivo.seekg(obtenerOffsetProveedor(indice), ios::beg);
-    archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(Proveedor));
-    archivo.close();
-
-    return true;
 }
 
 void buscarProveedorPorID() {
@@ -440,6 +446,277 @@ void buscarProveedorPorID() {
 }
 
 // ==============================
+// FUNCIONES DE PRODUCTOS
+// ==============================
+
+long long obtenerOffsetProducto(int indice) {
+    return sizeof(ArchivoHeader) + static_cast<long long>(indice) * sizeof(Producto);
+}
+
+bool codigoProductoDuplicado(const char* codigoBuscado) {
+    ifstream archivo(ARCHIVO_PRODUCTOS, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Producto producto;
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.seekg(obtenerOffsetProducto(i), ios::beg);
+        archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!producto.eliminado && strcmp(producto.codigo, codigoBuscado) == 0) {
+            archivo.close();
+            return true;
+        }
+    }
+
+    archivo.close();
+    return false;
+}
+
+bool guardarProducto(Producto producto) {
+    ArchivoHeader header = leerHeader(ARCHIVO_PRODUCTOS);
+
+    producto.id = header.proximoID;
+    producto.eliminado = false;
+    producto.totalVendido = 0;
+    producto.fechaCreacion = time(nullptr);
+    producto.fechaUltimaModificacion = producto.fechaCreacion;
+
+    ofstream archivo(ARCHIVO_PRODUCTOS, ios::binary | ios::app);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    archivo.write(reinterpret_cast<const char*>(&producto), sizeof(Producto));
+    archivo.close();
+
+    header.cantidadRegistros++;
+    header.registrosActivos++;
+    header.proximoID++;
+
+    return actualizarHeader(ARCHIVO_PRODUCTOS, header);
+}
+
+int buscarIndiceProductoPorID(int idBuscado) {
+    ifstream archivo(ARCHIVO_PRODUCTOS, ios::binary);
+    if (!archivo.is_open()) {
+        return -1;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    Producto producto;
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.seekg(obtenerOffsetProducto(i), ios::beg);
+        archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (!producto.eliminado && producto.id == idBuscado) {
+            archivo.close();
+            return i;
+        }
+    }
+
+    archivo.close();
+    return -1;
+}
+
+bool leerProductoPorIndice(int indice, Producto& producto) {
+    ifstream archivo(ARCHIVO_PRODUCTOS, ios::binary);
+    if (!archivo.is_open()) {
+        return false;
+    }
+
+    archivo.seekg(obtenerOffsetProducto(indice), ios::beg);
+    archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+    archivo.close();
+
+    return true;
+}
+
+void registrarProducto() {
+    Producto producto;
+    char buffer[300];
+
+    cout << "\n========== REGISTRAR PRODUCTO ==========\n";
+
+    cout << "Codigo: ";
+    leerLinea(producto.codigo, 20);
+    if (strlen(producto.codigo) == 0) {
+        cout << "ERROR: El codigo no puede estar vacio.\n";
+        return;
+    }
+
+    if (codigoProductoDuplicado(producto.codigo)) {
+        cout << "ERROR: Ya existe un producto con ese codigo.\n";
+        return;
+    }
+
+    cout << "Nombre: ";
+    leerLinea(producto.nombre, 100);
+    if (strlen(producto.nombre) == 0) {
+        cout << "ERROR: El nombre no puede estar vacio.\n";
+        return;
+    }
+
+    cout << "Descripcion: ";
+    leerLinea(producto.descripcion, 200);
+
+    cout << "ID del proveedor: ";
+    leerLinea(buffer, 20);
+    producto.idProveedor = atoi(buffer);
+
+    Proveedor proveedor;
+    if (!leerProveedorPorID(producto.idProveedor, proveedor)) {
+        cout << "ERROR: No existe un proveedor activo con ese ID.\n";
+        return;
+    }
+
+    cout << "Precio: ";
+    leerLinea(buffer, 30);
+    producto.precio = static_cast<float>(atof(buffer));
+    if (producto.precio <= 0) {
+        cout << "ERROR: El precio debe ser mayor a 0.\n";
+        return;
+    }
+
+    cout << "Stock inicial: ";
+    leerLinea(buffer, 30);
+    producto.stock = atoi(buffer);
+    if (producto.stock < 0) {
+        cout << "ERROR: El stock no puede ser negativo.\n";
+        return;
+    }
+
+    cout << "Stock minimo: ";
+    leerLinea(buffer, 30);
+    producto.stockMinimo = atoi(buffer);
+    if (producto.stockMinimo < 0) {
+        cout << "ERROR: El stock minimo no puede ser negativo.\n";
+        return;
+    }
+
+    cout << "\nResumen del producto:\n";
+    cout << "Codigo       : " << producto.codigo << "\n";
+    cout << "Nombre       : " << producto.nombre << "\n";
+    cout << "Descripcion  : " << producto.descripcion << "\n";
+    cout << "Proveedor    : " << proveedor.nombre << " (ID: " << proveedor.id << ")\n";
+    cout << "Precio       : " << producto.precio << "\n";
+    cout << "Stock        : " << producto.stock << "\n";
+    cout << "Stock minimo : " << producto.stockMinimo << "\n";
+
+    cout << "\nConfirmar guardado? (S/N): ";
+    leerLinea(buffer, 10);
+
+    if (toupper(buffer[0]) != 'S') {
+        cout << "Operacion cancelada.\n";
+        return;
+    }
+
+    if (guardarProducto(producto)) {
+        cout << "Producto guardado correctamente.\n";
+    } else {
+        cout << "ERROR: No se pudo guardar el producto.\n";
+    }
+}
+
+void listarProductos() {
+    ifstream archivo(ARCHIVO_PRODUCTOS, ios::binary);
+    if (!archivo.is_open()) {
+        cout << "ERROR: No se pudo abrir el archivo de productos.\n";
+        return;
+    }
+
+    ArchivoHeader header;
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+
+    if (header.registrosActivos == 0) {
+        cout << "\nNo hay productos registrados.\n";
+        archivo.close();
+        return;
+    }
+
+    cout << "\n==================== LISTADO DE PRODUCTOS ====================\n";
+
+    Producto producto;
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        archivo.seekg(obtenerOffsetProducto(i), ios::beg);
+        archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+
+        if (producto.eliminado) {
+            continue;
+        }
+
+        Proveedor proveedor;
+        bool proveedorExiste = leerProveedorPorID(producto.idProveedor, proveedor);
+
+        cout << "\nID           : " << producto.id << "\n";
+        cout << "Codigo       : " << producto.codigo << "\n";
+        cout << "Nombre       : " << producto.nombre << "\n";
+        cout << "Descripcion  : " << producto.descripcion << "\n";
+        cout << "Precio       : " << producto.precio << "\n";
+        cout << "Stock        : " << producto.stock << "\n";
+        cout << "Stock minimo : " << producto.stockMinimo << "\n";
+        cout << "Proveedor    : ";
+        if (proveedorExiste) {
+            cout << proveedor.nombre << " (ID: " << proveedor.id << ")\n";
+        } else {
+            cout << "No encontrado (ID: " << producto.idProveedor << ")\n";
+        }
+        cout << "Creado       : ";
+        mostrarFechaHora(producto.fechaCreacion);
+        cout << "\n";
+    }
+
+    archivo.close();
+}
+
+void buscarProductoPorID() {
+    char buffer[50];
+    cout << "\nID del producto a buscar: ";
+    leerLinea(buffer, 50);
+
+    int idBuscado = atoi(buffer);
+    int indice = buscarIndiceProductoPorID(idBuscado);
+
+    if (indice == -1) {
+        cout << "ERROR: No existe un producto activo con ese ID.\n";
+        return;
+    }
+
+    Producto producto;
+    if (!leerProductoPorIndice(indice, producto)) {
+        cout << "ERROR: No se pudo leer el producto.\n";
+        return;
+    }
+
+    Proveedor proveedor;
+    bool proveedorExiste = leerProveedorPorID(producto.idProveedor, proveedor);
+
+    cout << "\n========== PRODUCTO ENCONTRADO ==========\n";
+    cout << "ID           : " << producto.id << "\n";
+    cout << "Codigo       : " << producto.codigo << "\n";
+    cout << "Nombre       : " << producto.nombre << "\n";
+    cout << "Descripcion  : " << producto.descripcion << "\n";
+    cout << "Precio       : " << producto.precio << "\n";
+    cout << "Stock        : " << producto.stock << "\n";
+    cout << "Stock minimo : " << producto.stockMinimo << "\n";
+    cout << "Proveedor    : ";
+    if (proveedorExiste) {
+        cout << proveedor.nombre << " (ID: " << proveedor.id << ")\n";
+    } else {
+        cout << "No encontrado (ID: " << producto.idProveedor << ")\n";
+    }
+    cout << "Creado       : ";
+    mostrarFechaHora(producto.fechaCreacion);
+    cout << "\n";
+}
+
+// ==============================
 // FUNCIONES DE PRUEBA
 // ==============================
 
@@ -453,16 +730,20 @@ void mostrarHeader(const char* nombreArchivo) {
     cout << "Version               : " << header.version << "\n";
 }
 
-void menuProveedores() {
+void menuPrincipal() {
     char buffer[20];
     int opcion = -1;
 
     do {
-        cout << "\n=============== MENU PROVEEDORES ===============\n";
+        cout << "\n==================== MENU PRINCIPAL ====================\n";
         cout << "1. Registrar proveedor\n";
         cout << "2. Listar proveedores\n";
         cout << "3. Buscar proveedor por ID\n";
         cout << "4. Mostrar header de proveedores\n";
+        cout << "5. Registrar producto\n";
+        cout << "6. Listar productos\n";
+        cout << "7. Buscar producto por ID\n";
+        cout << "8. Mostrar header de productos\n";
         cout << "0. Salir\n";
         cout << "Seleccione una opcion: ";
         leerLinea(buffer, 20);
@@ -481,6 +762,18 @@ void menuProveedores() {
                 break;
             case 4:
                 mostrarHeader(ARCHIVO_PROVEEDORES);
+                break;
+            case 5:
+                registrarProducto();
+                break;
+            case 6:
+                listarProductos();
+                break;
+            case 7:
+                buscarProductoPorID();
+                break;
+            case 8:
+                mostrarHeader(ARCHIVO_PRODUCTOS);
                 break;
             case 0:
                 cout << "Saliendo del sistema...\n";
@@ -502,7 +795,7 @@ int main() {
         return 1;
     }
 
-    menuProveedores();
+    menuPrincipal();
 
     return 0;
 }
