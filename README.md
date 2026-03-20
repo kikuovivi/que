@@ -1,207 +1,322 @@
-# Sistema de Gestion de Inventario
----
+# Sistema de Gestión de Inventario con Persistencia Binaria
 
-## Descripcion del Proyecto
+## Descripción del Proyecto
 
-Sistema de gestion de inventario desarrollado en C++ que permite administrar productos, proveedores, clientes y transacciones comerciales de una tienda. 
----
+Este proyecto corresponde a la **fase 2** del sistema de gestión de inventario de la materia **Programación 2**.
 
-## Instrucciones de Compilacion
+El sistema fue desarrollado en **C++** y evolucionó desde una versión inicial basada en estructuras cargadas en memoria (fase 1) hacia una versión con **persistencia en archivos binarios**, donde la información de proveedores, productos, clientes y transacciones se guarda directamente en disco.
 
-### Visual Studio (MSVC)
+El objetivo principal de esta fase fue implementar:
 
-1. Abrir Visual Studio
-2. Crear un nuevo proyecto: **Archivo → Nuevo → Proyecto → Aplicacion de consola C++**
-3. Reemplazar el contenido del `.cpp` generado con el archivo `que.cpp`
-4. Compilar con **Ctrl + Shift + B** o pulsando en "Depurador local de Windows"
-5. Verificar que no aparezcan errores en la ventana **Lista de errores**
-
-> El archivo ya incluye `#define _CRT_SECURE_NO_WARNINGS` y `#include <windows.h>` necesarios para compilar en Visual Studio sin advertencias.
----
-
-## Instrucciones de Ejecucion
-
-### Visual Studio
-
-Presionar **F5** para compilar y ejecutar con depurador, o **Ctrl + F5** para ejecutar sin depurador.
-
-### Terminal
-
-```bash
-./inventario        # Linux / Mac
-inventario.exe      # Windows CMD
-```
-
-Al iniciar, el sistema solicita el nombre y RIF de la tienda, luego muestra el menu principal.
+- persistencia binaria con `<fstream>`
+- manejo de archivos independientes por entidad
+- uso de **headers** administrativos por archivo
+- IDs autoincrementales
+- validaciones básicas de integridad entre archivos
+- lectura y escritura de registros binarios
+- actualización de registros directamente en archivo
 
 ---
 
-## Estructura del Codigo
+## Estado Actual del Proyecto
 
-El proyecto consta de un unico archivo `que.cpp` organizado en las siguientes secciones:
+La versión actual implementa una base funcional de la fase 2 con:
 
-```
-que.cpp
-|
-+-- ESTRUCTURAS DE DATOS
-|     Producto, Proveedor, Cliente, Transaccion, Tienda
-|
-+-- UTILIDADES
-|     obtenerFechaActual(), validarEmail(), validarFecha()
-|     contieneSubstring(), esCancelar(), leerLinea()
-|
-+-- INICIALIZACION Y LIBERACION
-|     inicializarTienda(), liberarTienda()
-|
-+-- REDIMENSIONAMIENTO
-|     redimensionarProductos(), redimensionarProveedores()
-|     redimensionarClientes(), redimensionarTransacciones()
-|
-+-- BUSQUEDAS Y VALIDACIONES
-|     buscarProductoPorId(), buscarProveedorPorId(), buscarClientePorId()
-|     existeProducto(), existeProveedor(), existeCliente()
-|     codigoDuplicado(), rifProveedorDuplicado(), cedulaDuplicada()
-|
-+-- CRUD PRODUCTOS
-|     crearProducto(), listarProductos(), buscarProducto()
-|     actualizarProducto(), actualizarStockProducto(), eliminarProducto()
-|
-+-- CRUD PROVEEDORES
-|     crearProveedor(), listarProveedores(), buscarProveedor()
-|     actualizarProveedor(), eliminarProveedor()
-|
-+-- CRUD CLIENTES
-|     crearCliente(), listarClientes(), buscarCliente()
-|     actualizarCliente(), eliminarCliente()
-|
-+-- TRANSACCIONES
-|     registrarCompra(), registrarVenta(), listarTransacciones()
-|     buscarTransacciones(), cancelarTransaccion()
-|
-+-- MENUS
-|     menuProductos(), menuProveedores(), menuClientes(), menuTransacciones()
-|
-+-- main()
-```
+- registro y consulta de **proveedores**
+- registro y consulta de **productos**
+- registro y consulta de **clientes**
+- registro de una **venta simple**
+- actualización del **stock del producto**
+- actualización del **gasto acumulado y cantidad de compras del cliente**
+- almacenamiento de la venta en **transacciones.bin**
 
-### Gestion de Memoria
+> Nota: esta versión prioriza una implementación funcional y defendible de la arquitectura de persistencia binaria. No todas las operaciones CRUD avanzadas quedaron completas para todas las entidades.
 
-Todos los arrays son dinamicos e inician con capacidad 5. Cuando se llena un array, se duplica su capacidad automaticamente:
+---
 
-```
-numElementos == capacidad  →  nueva capacidad = capacidad * 2
-                            →  new[], copiar datos, delete[] viejo
-```
+## Estructura del Proyecto
+
+    proyecto-inventario-p2/
+    ├── main.cpp
+    ├── que.cpp
+    ├── README.md
+    ├── tienda.bin
+    ├── proveedores.bin
+    ├── productos.bin
+    ├── clientes.bin
+    └── transacciones.bin
+
+### Archivos principales
+
+#### `main.cpp`
+
+Contiene la implementación principal de la **fase 2**, incluyendo:
+
+- estructuras persistentes
+- `ArchivoHeader`
+- inicialización de archivos binarios
+- CRUD inicial de proveedores
+- CRUD inicial de productos
+- CRUD inicial de clientes
+- registro de venta simple
+- actualización de stock y datos del cliente
+- listado de transacciones
+
+#### `que.cpp`
+
+Archivo heredado de la **fase 1**.  
+Se conserva como referencia de la versión anterior del proyecto, la cual estaba basada principalmente en arreglos dinámicos y manejo de datos en memoria RAM.
+
+> Para la defensa de la fase 2, el archivo principal relevante es `main.cpp`.
+
+---
+
+## Archivos Binarios Utilizados
+
+El sistema trabaja con un archivo binario independiente por entidad:
+
+- `tienda.bin`
+- `proveedores.bin`
+- `productos.bin`
+- `clientes.bin`
+- `transacciones.bin`
+
+Cada archivo inicia con un **header** administrativo.
+
+---
+
+## Estructura del Header
+
+Cada archivo `.bin` comienza con la siguiente estructura:
+
+    struct ArchivoHeader {
+        int cantidadRegistros;
+        int proximoID;
+        int registrosActivos;
+        int version;
+    };
+
+### Función del Header
+
+El header permite conocer rápidamente:
+
+- cuántos registros contiene el archivo
+- cuál es el siguiente ID disponible
+- cuántos registros activos existen
+- la versión del archivo
+
+Esto evita recorrer todo el archivo cada vez que se necesita esa información.
+
+---
+
+## Estructuras Persistentes
+
+Las estructuras persistentes fueron diseñadas con tamaños fijos para poder almacenarse correctamente en binario.
+
+### Entidades manejadas
+
+- `Proveedor`
+- `Producto`
+- `Cliente`
+- `Transaccion`
+- `DetalleTransaccion`
+- `Tienda`
+
+Estas estructuras utilizan tipos apropiados para persistencia, por ejemplo:
+
+- `int`
+- `float`
+- `char[]`
+- `bool`
+- `time_t`
 
 ---
 
 ## Funcionalidades Implementadas
 
-### Productos
-- Registrar producto con codigo unico, proveedor valido, precio y stock
-- Buscar por ID, nombre (parcial), codigo (parcial) o proveedor
-- Actualizar campos individuales con menu de edicion
-- Ajuste manual de stock con validacion de stock >= 0
-- Listar todos en formato tabla
-- Eliminar (marcado logico) con advertencia si tiene transacciones
+### 1. Proveedores
 
-### Proveedores
-- Registrar con RIF unico y email validado
-- Buscar por ID, nombre (parcial) o RIF
-- Actualizar campos individuales
-- Listar en formato tabla
-- Eliminar solo si no tiene productos asociados
+- Registrar proveedor
+- Validar RIF único
+- Validar email
+- Guardar proveedor en `proveedores.bin`
+- Listar proveedores
+- Buscar proveedor por ID
 
-### Clientes
-- Registrar con cedula/RIF unico y email validado
-- Buscar por ID, nombre (parcial) o cedula
-- Actualizar campos individuales
-- Listar en formato tabla
-- Eliminar (marcado logico)
+### 2. Productos
 
-### Transacciones
-- Registrar compra: incrementa stock automaticamente
-- Registrar venta: valida stock suficiente, decrementa stock automaticamente
-- Buscar por ID, producto, cliente, proveedor, fecha o tipo
-- Listar todas en formato tabla
-- Cancelar/anular transaccion con reversion automatica de stock
+- Registrar producto
+- Validar código único
+- Validar que el proveedor exista
+- Guardar producto en `productos.bin`
+- Listar productos
+- Buscar producto por ID
+- Mostrar el proveedor asociado
 
-### General
-- Cancelacion en cualquier paso escribiendo `CANCELAR` o `0`
-- Confirmacion (S/N) antes de guardar, actualizar, eliminar o cancelar
-- Fecha de registro automatica tomada del sistema
-- IDs autoincrementales para todas las entidades
-- Validacion de email (debe contener `@` y `.`)
+### 3. Clientes
+
+- Registrar cliente
+- Validar cédula única
+- Validar email
+- Guardar cliente en `clientes.bin`
+- Listar clientes
+
+### 4. Transacciones
+
+- Registrar una **venta simple**
+- Validar existencia de cliente y producto
+- Validar stock suficiente
+- Guardar transacción en `transacciones.bin`
+- Actualizar stock del producto
+- Actualizar `totalGastado` y `cantidadCompras` del cliente
+- Listar transacciones
+
+---
+
+## Flujo General de una Venta
+
+La operación de venta simple sigue esta lógica:
+
+1. Se busca el cliente en `clientes.bin`
+2. Se busca el producto en `productos.bin`
+3. Se valida que el producto tenga stock suficiente
+4. Se construye la transacción
+5. Se guarda la transacción en `transacciones.bin`
+6. Se actualiza el producto en archivo:
+   - se reduce el stock
+   - se incrementa `totalVendido`
+7. Se actualiza el cliente en archivo:
+   - se incrementa `totalGastado`
+   - se incrementa `cantidadCompras`
+
+---
+
+## Acceso Aleatorio
+
+El sistema usa el concepto de **offset** para ubicar registros dentro de los archivos binarios.
+
+La fórmula general utilizada es:
+
+    sizeof(ArchivoHeader) + indice * sizeof(Estructura)
+
+Esto permite:
+
+- leer registros específicos
+- actualizar registros existentes
+- mantener una lógica de acceso directo dentro del archivo
+
+---
+
+## Compilación
+
+### Con g++
+
+    g++ main.cpp -o inventario
+
+### Ejecución
+
+En Windows:
+
+    inventario.exe
+
+En Linux / Git Bash:
+
+    ./inventario
+
+---
+
+## Requisitos
+
+- C++11 o superior
+- Compilador compatible con `g++`
+- Soporte para `<fstream>`
+
+---
+
+## Menú Principal
+
+La versión actual incluye opciones para:
+
+- registrar proveedor
+- listar proveedores
+- registrar producto
+- listar productos
+- registrar cliente
+- listar clientes
+- registrar venta simple
+- listar transacciones
+- mostrar headers de archivos
 
 ---
 
 ## Casos de Prueba Ejecutados
 
-### Caso 1: Registro de Proveedor y Producto
-```
-1. Crear proveedor "Distribuidora XYZ" con RIF J-12345678-9
-2. Crear producto "Laptop HP" con codigo PROD-001, asociado al proveedor anterior
-3. Buscar producto por nombre parcial "lap" → encuentra "Laptop HP"
-4. Listar productos → muestra tabla con el producto registrado
-Resultado: sin errores
-```
+### Caso 1: Registro de proveedor
 
-### Caso 2: Compra de Inventario
-```
-1. Registrar compra de 50 unidades de "Laptop HP" al proveedor
-2. Verificar stock: paso de 0 a 50
-3. Buscar transacciones por ID de producto → muestra la compra
-Resultado: sin errores
-```
+- registro correcto de proveedor
+- validación de email
+- rechazo de RIF duplicado
 
-### Caso 3: Venta con Validacion de Stock
-```
-1. Intentar vender 100 unidades → rechazado (stock insuficiente: disponible 50)
-2. Vender 30 unidades al cliente registrado
-3. Verificar stock: paso de 50 a 20
-4. Buscar transacciones por cliente → muestra la venta
-Resultado: sin errores
-```
+### Caso 2: Registro de producto
 
-### Caso 4: Cancelacion de Transaccion
-```
-1. Cancelar la venta de 30 unidades
-2. Verificar stock: volvio de 20 a 50
-3. Transaccion marcada como [CANCELADA] en el listado
-Resultado: sin errores
-```
+- rechazo si el proveedor no existe
+- rechazo de código duplicado
+- registro correcto del producto
 
-### Caso 5: Edicion Selectiva
-```
-1. Actualizar producto: cambiar solo precio y descripcion, resto sin cambios
-2. Actualizar proveedor: cambiar solo telefono
-3. Listar → refleja los cambios correctamente
-Resultado: sin errores
-```
+### Caso 3: Registro de cliente
 
-### Caso 6: Busquedas Avanzadas
-```
-1. Buscar producto por nombre "lap" → encuentra "Laptop HP"
-2. Listar productos de proveedor ID 1 → muestra solo sus productos
-3. Buscar transacciones por fecha exacta → muestra coincidencias
-Resultado: sin errores
-```
+- validación de email
+- validación de cédula única
+- registro correcto del cliente
 
-### Caso 7: Cancelacion Durante Registro
-```
-1. Iniciar registro de producto, ingresar codigo y nombre
-2. En campo descripcion escribir "CANCELAR"
-3. Verificar que el producto NO fue creado (listado sin cambios)
-Resultado: sin errores
-```
+### Caso 4: Venta simple
+
+- rechazo por stock insuficiente
+- registro correcto de venta
+- actualización de stock
+- actualización del gasto del cliente
+- almacenamiento correcto en `transacciones.bin`
 
 ---
 
-## Notas Tecnicas
+## Notas Técnicas
 
-- Lenguaje: C++11
-- Compilador probado: MSVC (Visual Studio) y g++ 11
-- Gestion de memoria: manual con `new` / `delete[]`
-- Sin uso de STL (vectores, strings): cumple requisito del proyecto
-- Eliminacion logica: los registros se marcan con `activo = false` en lugar de borrarse fisicamente
-- Codificacion: UTF-8 con soporte para consola Windows via `SetConsoleOutputCP(CP_UTF8)`
+- Lenguaje: **C++**
+- Persistencia: **archivos binarios**
+- Librería principal para archivos: `<fstream>`
+- IDs autoincrementales manejados por `ArchivoHeader`
+- La fase 2 ya no depende de arreglos dinámicos como almacenamiento principal
+- Los datos se mantienen en disco entre ejecuciones
+- La implementación actual prioriza estabilidad y claridad para la defensa académica
+
+---
+
+## Resumen de Evolución del Proyecto
+
+### Fase 1
+
+- sistema basado en memoria RAM
+- arreglos dinámicos
+- operaciones sobre estructuras en memoria
+- archivo principal: `que.cpp`
+
+### Fase 2
+
+- sistema con persistencia binaria
+- archivos separados por entidad
+- headers administrativos
+- registros persistentes en disco
+- archivo principal: `main.cpp`
+
+---
+
+## Autoría y Organización del Trabajo
+
+El repositorio conserva tanto el archivo de referencia de la fase 1 (`que.cpp`) como la implementación funcional de la fase 2 (`main.cpp`) para mostrar la evolución del proyecto.
+
+La fase 2 se desarrolló de forma incremental, organizando la implementación por etapas:
+
+1. base de persistencia y headers
+2. proveedores binarios
+3. productos binarios
+4. clientes y ventas simples
