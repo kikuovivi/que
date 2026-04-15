@@ -15,11 +15,21 @@ private:
     int stockMinimo;
     int totalVendido;
     bool eliminado;
-    time_t fechaCreacion;
-    time_t fechaUltimaModificacion;
+    std::time_t fechaCreacion;
+    std::time_t fechaUltimaModificacion;
 
 public:
     Producto();
+    Producto(const char* codigo,
+            const char* nombre,
+            const char* descripcion,
+            float precio,
+            int stock,
+            int idProveedor,
+            int stockMinimo);
+    Producto(const Producto& otro) = default;
+    ~Producto() = default;
+
     int getId() const;
     const char* getCodigo() const;
     const char* getNombre() const;
@@ -30,23 +40,28 @@ public:
     int getStockMinimo() const;
     int getTotalVendido() const;
     bool isEliminado() const;
-    time_t getFechaCreacion() const;
-    time_t getFechaUltimaModificacion() const;
+    std::time_t getFechaCreacion() const;
+    std::time_t getFechaUltimaModificacion() const;
 
     void setId(int nuevoId);
-    void setCodigo(const char* nuevoCodigo);
-    void setNombre(const char* nuevoNombre);
-    void setDescripcion(const char* nuevaDescripcion);
-    bool setPrecio(float nuevoPrecio);       
-    bool setStock(int nuevoStock);           
-    void setIdProveedor(int nuevoIdProveedor);
+    bool setCodigo(const char* nuevoCodigo);
+    bool setNombre(const char* nuevoNombre);
+    bool setDescripcion(const char* nuevaDescripcion);
+    bool setPrecio(float nuevoPrecio);
+    bool setStock(int nuevoStock);
+    bool setIdProveedor(int nuevoIdProveedor);
     bool setStockMinimo(int nuevoStockMinimo);
-    void setTotalVendido(int nuevoTotal);
+    bool setTotalVendido(int nuevoTotal);
     void setEliminado(bool estado);
-    void setFechaCreacion(time_t fecha);
-    void setFechaUltimaModificacion(time_t fecha);
+    void setFechaCreacion(std::time_t fecha);
+    void setFechaUltimaModificacion(std::time_t fecha);
+
+    bool tieneDatosValidosBasicos() const;
+    bool tieneStockCritico() const;
 
     void mostrarInformacionBasica() const;
+    void mostrarInformacionCompleta() const;
+
     static int obtenerTamano();
 };
 
