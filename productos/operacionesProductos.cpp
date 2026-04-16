@@ -2,71 +2,23 @@
 #include "../persistencia/GestorArchivos.hpp"
 #include "../persistencia/Constantes.hpp"
 #include "../utilidades/Formatos.hpp"
+#include "../proveedores/operacionesProveedores.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
-#include <ctime>
 
 using namespace std;
 
 namespace {
-    struct ProveedorLegacy {
-        int id;
-        char nombre[100];
-        char rif[20];
-        char telefono[20];
-        char email[100];
-        char direccion[200];
-        bool eliminado;
-        time_t fechaCreacion;
-        time_t fechaUltimaModificacion;
-    };
-
     void leerLinea(char* buffer, int tam) {
         cin.getline(buffer, tam);
         if (cin.fail()) {
             cin.clear();
             cin.ignore(10000, '\n');
         }
-    }
-
-    long long obtenerOffsetProveedorLegacy(int indice) {
-        return sizeof(ArchivoHeader) + static_cast<long long>(indice) * sizeof(ProveedorLegacy);
-    }
-
-    bool leerProveedorPorIDLegacy(int idBuscado, ProveedorLegacy& proveedor) {
-        ifstream archivo(Constantes::ARCHIVO_PROVEEDORES, ios::binary);
-        if (!archivo.is_open()) {
-            return false;
-        }
-
-        ArchivoHeader header;
-        archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-        if (!archivo.good()) {
-            archivo.close();
-            return false;
-        }
-
-        for (int i = 0; i < header.cantidadRegistros; i++) {
-            archivo.seekg(obtenerOffsetProveedorLegacy(i), ios::beg);
-            archivo.read(reinterpret_cast<char*>(&proveedor), sizeof(ProveedorLegacy));
-
-            if (!archivo.good()) {
-                archivo.close();
-                return false;
-            }
-
-            if (!proveedor.eliminado && proveedor.id == idBuscado) {
-                archivo.close();
-                return true;
-            }
-        }
-
-        archivo.close();
-        return false;
     }
 }
 
@@ -160,8 +112,8 @@ void registrarProducto() {
         return;
     }
 
-    ProveedorLegacy proveedor;
-    if (!leerProveedorPorIDLegacy(producto.getIdProveedor(), proveedor)) {
+    Proveedor proveedor;
+    if (!leerProveedorPorID(producto.getIdProveedor(), proveedor)) {
         cout << "ERROR: No existe un proveedor activo con ese ID.\n";
         return;
     }
@@ -252,8 +204,8 @@ void listarProductos() {
             continue;
         }
 
-        ProveedorLegacy proveedor;
-        bool proveedorExiste = leerProveedorPorIDLegacy(producto.getIdProveedor(), proveedor);
+        Proveedor proveedor;
+        bool proveedorExiste = leerProveedorPorID(producto.getIdProveedor(), proveedor);
 
         cout << "\nID           : " << producto.getId() << "\n";
         cout << "Codigo       : " << producto.getCodigo() << "\n";
@@ -263,7 +215,7 @@ void listarProductos() {
         cout << "Total vendido: " << producto.getTotalVendido() << "\n";
         cout << "Proveedor    : ";
         if (proveedorExiste) {
-            cout << proveedor.nombre << " (ID: " << proveedor.id << ")\n";
+            cout << proveedor.getNombre() << " (ID: " << proveedor.getId() << ")\n";
         } else {
             cout << "No encontrado (ID: " << producto.getIdProveedor() << ")\n";
         }
@@ -285,8 +237,8 @@ void buscarProductoPorID() {
         return;
     }
 
-    ProveedorLegacy proveedor;
-    bool proveedorExiste = leerProveedorPorIDLegacy(producto.getIdProveedor(), proveedor);
+    Proveedor proveedor;
+    bool proveedorExiste = leerProveedorPorID(producto.getIdProveedor(), proveedor);
 
     cout << "\n========== PRODUCTO ENCONTRADO ==========\n";
     cout << "ID           : " << producto.getId() << "\n";
@@ -296,7 +248,7 @@ void buscarProductoPorID() {
     cout << "Stock        : " << producto.getStock() << "\n";
     cout << "Proveedor    : ";
     if (proveedorExiste) {
-        cout << proveedor.nombre << " (ID: " << proveedor.id << ")\n";
+        cout << proveedor.getNombre() << " (ID: " << proveedor.getId() << ")\n";
     } else {
         cout << "No encontrado (ID: " << producto.getIdProveedor() << ")\n";
     }
