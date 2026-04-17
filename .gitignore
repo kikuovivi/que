@@ -1,5 +1,4 @@
-*.exe
+# Objetos y ejecutables
 *.o
-*.obj
-*.tmp
-*.log
+inventario_v3
+inventario_v3.exe
